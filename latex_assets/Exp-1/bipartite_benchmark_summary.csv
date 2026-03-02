@@ -1,0 +1,9 @@
+Topology,Baseline,PIO,Gap %,Max Slot,Fragmentation
+COST239,Default SCIP,284.394,0.0,5.0,0.139
+COST239,Neural Scheduler,319.68,1925.0,42.0,0.248
+GERMAN,Default SCIP,173.804,0.0,5.0,0.127
+GERMAN,Neural Scheduler,242.422,0.0,5.0,0.06
+NSFNET,Default SCIP,200.692,0.0,8.5,0.197
+NSFNET,Neural Scheduler,200.834,0.0,8.5,0.214
+SPAIN,Default SCIP,96.323,0.0,9.5,0.227
+SPAIN,Neural Scheduler,90.236,0.0,9.5,0.168
