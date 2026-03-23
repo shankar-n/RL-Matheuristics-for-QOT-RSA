@@ -110,8 +110,53 @@ def plot_all_topologies():
     print(f"Successfully generated high-resolution plot at: {save_path}")
     plt.show()
 
-if __name__ == "__main__":
-    # Generate plots for Version 3 Data
-    plot_smoothed_training('bipartite_training_history.csv', 'bipartite_smoothed_curve', 'Bipartite')
-    plot_smoothed_training('tripartite_training_history.csv', 'tripartite_smoothed_curve', 'Tripartite')
-    plot_all_topologies()
+def generate_exhaustive_report(history_df, df_results, convergence_data, action_counts, architecture, save_dir="latex_assets"):
+    os.makedirs(save_dir, exist_ok=True)
+    colors = {'Default SCIP': '#7f8c8d', 'Neural Scheduler': '#2ecc71'}
+    arch_name = architecture.capitalize()
+
+    if not history_df.empty:
+        plt.figure(figsize=(7, 4))
+        plt.plot(history_df['episode'], history_df['agent_pio'], label=f'{arch_name} Agent PIO')
+        plt.plot(history_df['episode'], history_df['default_pio'], linestyle='--', color='red', label='Default SCIP PIO')
+        plt.title(f"{arch_name} Training Convergence (Exact Difference)")
+        plt.xlabel("Episode")
+        plt.ylabel("Primal Integral")
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(os.path.join(save_dir, f'{architecture}_training_convergence.png'), dpi=100) 
+        plt.close()
+
+    plt.figure(figsize=(7, 4))
+    for key, (times, gaps) in convergence_data.items():
+        if "GERMAN" in key:
+            baseline = key.split('_')[1]
+            plt.step(times, gaps, where='post', label=baseline, color=colors.get(baseline, '#000000'))
+    plt.title(f"Optimality Gap vs Time (GERMAN) - {arch_name}")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Gap (%)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_dir, f'{architecture}_solver_gap_over_time.png'), dpi=100)
+    plt.close()
+
+    clean_df = df_results[df_results['Max Slot'] != float('inf')]
+    if not clean_df.empty:
+        plt.figure(figsize=(7, 4))
+        agg = clean_df.groupby(['Load', 'Baseline'])['Max Slot'].mean().unstack()
+        agg.plot(kind='bar', ax=plt.gca(), color=[colors.get(x, '#000') for x in agg.columns])
+        plt.title(f"Spectrum Utilization vs Load - {arch_name}")
+        plt.xlabel("Number of Demands (Load)")
+        plt.ylabel("Maximum Slot Used")
+        plt.legend()
+        plt.grid(axis='y')
+        plt.tight_layout()
+        plt.savefig(os.path.join(save_dir, f'{architecture}_spectrum_utilization_bar.png'), dpi=100)
+        plt.close()
+
+    summary_df = df_results.groupby(['Topology', 'Baseline'])[['PIO', 'Gap %', 'Max Slot', 'Fragmentation']].mean().round(3)
+    summary_df.to_csv(os.path.join(save_dir, f'{architecture}_benchmark_summary.csv'))
+    if not history_df.empty: history_df.to_csv(os.path.join(save_dir, f'{architecture}_training_history.csv'), index=False)
+    action_counts.to_csv(os.path.join(save_dir, f'{architecture}_action_distribution.csv'))
